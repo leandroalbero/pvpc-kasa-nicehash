@@ -2,10 +2,11 @@ import setuptools
 with open('requirements.txt', 'r') as f:
     install_requires = f.read().splitlines()
 setuptools.setup(
-    name='pvpc-kasa-nicehash',
-    version="0.0.1",
+    name='pvpc-knh',
+    version="0.0.2",
     author="leandroalbero",
     description="Queries cost of energy from Red Electrica Española, kWh used from 'TP-Link Kasa' and data from "
                 "Nicehash to calculate the efficiency of mining in a monthly basis",
     packages=setuptools.find_packages()
+
 )
