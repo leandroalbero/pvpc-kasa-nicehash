@@ -4,8 +4,6 @@ This script calculates the cost-effectiveness of mining. It queries historical d
 
 ## Getting started
 
----
-
 You can install the most recent release using pip while in the project root:
 
 `pip install .`
@@ -18,7 +16,7 @@ Finally, run it by:
 
 ```
 $ python3 pvpc-knh
-Current power consumption (W): emeterstatus
+Current power consumption (W): <EmeterStatus power=878.161282 voltage=236.091346 current=3.776688 total=7.551>
 Query failed due to data not available for that date: 2022-01-12 00:00:00
 ----------------
 Energy consumption by day (kWh): {1: 7.101, 2: 12.593, 3: 10.4, 4: 11.76, 5: 13.2, 6: 9.92, 7: 10.342, 8: 11.134, 9: 10.234, 10: 12.756, 11: 13.392}
@@ -27,13 +25,10 @@ Cost in Euros/day: {1: 1.2653982, 2: 2.354891, 3: 2.46064, 4: 2.821224, 5: 3.594
 ----------------
 Total cost in Euros: 31.6218698
 ```
+
 ![](media/img.png)
 
-
-
 ## Requirements and supported devices
-
----
 
 * TP-Link Kasa smart plug, this code has been tested with the HS110
 * Nicehash API private token
@@ -53,14 +48,12 @@ Total cost in Euros: 31.6218698
 
 * We don't use 'ESIOS API' because it requires an API token, we use a web scraper on
   [https://tarifaluzhora.es/](https://tarifaluzhora.es/?tarifa=pcb&fecha=10%2F01%2F2022) instead. This is slower,
-  but it is easier to set up.
-* CLI doesn't have any parameters yet.
+  but it is easier to set up. Will try to use ESIOS API by requesting a token on the CLI
+* CLI doesn't have any parameters yet. Should have at least start_date and end_date or a default value for current month
 * Nicehash API
 * Tidy the code for the plot function.
 
 ## Resources
-
----
 
 ### Links
 
