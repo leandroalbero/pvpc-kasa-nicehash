@@ -7,3 +7,4 @@ python-kasa~=0.4.0
 webdriver_manager
 requests~=2.27.1
 matplotlib~=3.5.1
+numpy~=1.22.0

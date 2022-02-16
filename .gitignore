@@ -2,3 +2,5 @@
 .idea
 /venv/
 /secrets
+/pvpc-knh/test.db
+/media/img.png

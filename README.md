@@ -6,7 +6,7 @@ This script calculates the cost-effectiveness of mining. It queries historical d
 
 You can install the most recent release using pip while in the project root:
 
-`pip install .`
+`pip3 install .`
 
 Then you'll need to install its dependencies using:
 
@@ -15,15 +15,14 @@ Then you'll need to install its dependencies using:
 Finally, run it by:
 
 ```
-$ python3 pvpc-knh
-Current power consumption (W): <EmeterStatus power=878.161282 voltage=236.091346 current=3.776688 total=7.551>
-Query failed due to data not available for that date: 2022-01-12 00:00:00
+(venv) fengdu:pvpc-kasa-nicehash leandroalbero$ python3 pvpc-knh
+[L] Current power consumption (W): <EmeterStatus power=756.361601 voltage=235.435793 current=3.266415 total=526.996>
+[E] Query failed due to data not available for that date: 2022-02-17 00:00:00
 ----------------
-Energy consumption by day (kWh): {1: 7.101, 2: 12.593, 3: 10.4, 4: 11.76, 5: 13.2, 6: 9.92, 7: 10.342, 8: 11.134, 9: 10.234, 10: 12.756, 11: 13.392}
-Energy cost by day (Euros/kWh): {1: 0.1782, 2: 0.187, 3: 0.2366, 4: 0.2399, 5: 0.2723, 6: 0.2768, 7: 0.3172, 8: 0.2675, 9: 0.1684, 10: 0.3193, 11: 0.3229}
-Cost in Euros/day: {1: 1.2653982, 2: 2.354891, 3: 2.46064, 4: 2.821224, 5: 3.5943599999999996, 6: 2.745856, 7: 3.2804824, 8: 2.9783450000000005, 9: 1.7234056, 10: 4.0729907999999995, 11: 4.3242768, 'sum': 31.6218698}
-----------------
-Total cost in Euros: 31.6218698
+Total cost in Euros: 96.84 
+Average cost in Euros: 4.40
+________________
+[('2022-01-19', 18.151, 0.3099, 5.6249949), ('2022-01-20', 17.519, 0.2843, 4.980651699999999), ('2022-01-21', 17.538, 0.27, 4.73526), ('2022-01-22', 17.602, 0.246, 4.330092), ('2022-01-23', 17.836, 0.2605, 4.646278), ('2022-01-24', 17.783, 0.3287, 5.8452721), ('2022-01-25', 17.788, 0.3238, 5.759754399999999), ('2022-01-26', 17.829, 0.3389, 6.0422481), ('2022-01-27', 16.594, 0.3346, 5.5523524), ('2022-01-28', 18.766, 0.325, 6.098949999999999), ('2022-01-29', 18.352, 0.2879, 5.2835408), ('2022-01-30', 18.39, 0.2988, 5.494932), ('2022-01-31', 18.312, 0.3247, 5.9459064)]
 ```
 
 ![](media/img.png)
