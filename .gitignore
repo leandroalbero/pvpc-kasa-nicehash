@@ -1,6 +1,7 @@
 /pvpc_kasa_nicehash.egg-info/
 .idea
 /venv/
-/secrets
+/pvpc-knh/secrets
 /pvpc-knh/test.db
 /media/img.png
+/pvpc-knh/secrets

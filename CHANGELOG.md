@@ -1,4 +1,12 @@
 # Changelog
+## 0.1.1
+* Add Nicehash SQLite table
+* Add _Nicehash API v2_ support (for now API credentials are stored on a 'secrets' file)
+* Add btc_produced and btc_eur to calc_metrics()
+* update README.md
+* update .gitignore
+* update requirements.txt
+
 ## 0.1.0
 * SQLite database to minimize web scraping
 * update requirements.txt

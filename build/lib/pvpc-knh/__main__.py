@@ -128,4 +128,4 @@ if __name__ == '__main__':
     metrics = calc_metrics(datetime.date(2022, 1, 1), datetime.date.today())
     print(f"Total cost in Euros: {metrics.get('total_cost'):.2f} ")
     print(f"Average cost in Euros: {metrics.get('avg_cost'):.2f}\n________________")
-    plot_data(datetime.date(2022, 1, 19), datetime.date.today(), plot_3=False)
+    plot_data(datetime.date(2022, 1, 19), datetime.date.today(), plot_3=True)

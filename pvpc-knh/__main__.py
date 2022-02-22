@@ -3,10 +3,11 @@ import datetime
 import os.path
 import sqlite3
 import sqlite3 as sql
-
 import matplotlib.pyplot
 import pandas as pd
 import kasa
+import requests
+import nicehash
 import selenium.common.exceptions
 from bs4 import BeautifulSoup
 from numpy import datetime64
@@ -16,16 +17,17 @@ from webdriver_manager.chrome import ChromeDriverManager
 import argparse
 
 
-def initialize_database():
+def __initialize_database():
     db = sql.connect('test.db')
     db.execute('CREATE TABLE precios_energia(fecha DATETIME PRIMARY KEY, eur_kwh FLOAT)')
     db.execute('CREATE TABLE consumos(plug_id TEXT, fecha DATETIME PRIMARY KEY, kwh FLOAT)')
+    db.execute('CREATE TABLE nicehash(id TEXT PRIMARY KEY, date DATETIME, amount FLOAT, fee_amount FLOAT)')
     db.close()
 
 
 def update_energy_cost(start: datetime, end: datetime):
     if not os.path.exists('test.db'):
-        initialize_database()
+        __initialize_database()
     driver = webdriver.Chrome(service=Service(ChromeDriverManager(log_level=40).install()))
     url = "https://tarifaluzhora.es/?tarifa=pcb&fecha="
     db = sql.connect('test.db')
@@ -43,7 +45,8 @@ def update_energy_cost(start: datetime, end: datetime):
                 cost_eur = float(soup.find_all('span', attrs={"class": "main_text"})[0].text[:6])
                 try:
                     cursor.execute('INSERT INTO precios_energia (fecha, eur_kwh) VALUES '
-                                   '(\'{}-{}-{}\',{})'.format(date.year, str(date.month).zfill(2), str(date.day).zfill(2), cost_eur))
+                                   '(\'{}-{}-{}\',{})'.format(date.year, str(date.month).zfill(2),
+                                                              str(date.day).zfill(2), cost_eur))
                 except sqlite3.IntegrityError:
                     pass
             except selenium.common.exceptions.UnexpectedAlertPresentException:
@@ -58,7 +61,7 @@ def update_energy_cost(start: datetime, end: datetime):
 
 async def update_power(year: int = None, month: int = None):
     if not os.path.exists('test.db'):
-        initialize_database()
+        __initialize_database()
     found_devices = await kasa.Discover.discover()
     db = sql.connect('test.db')
     cursor = db.cursor()
@@ -72,6 +75,8 @@ async def update_power(year: int = None, month: int = None):
             daily = await temp.get_emeter_daily(year=year, month=month)
             print(f'[L] Current power consumption (W): {await temp.get_emeter_realtime()}')
             for day in daily.items():
+                if day[0] == datetime.date.today().day:
+                    break
                 query = f"INSERT INTO consumos (plug_id, fecha, kwh) VALUES ('{found_devices.get(device).device_id}'" \
                         f", '{year}-{str(month).zfill(2)}-{str(day[0]).zfill(2)}',{day[1]}) "
                 try:
@@ -83,6 +88,35 @@ async def update_power(year: int = None, month: int = None):
     db.close()
 
 
+def update_nicehash():
+    endpoint = 'https://api2.nicehash.com'
+    if not os.path.exists('test.db'):
+        __initialize_database()
+    try:
+        secrets_file = open('secrets', 'r')
+        secrets = secrets_file.readlines()
+        organisation_id = secrets[0].rstrip('\n')
+        key = secrets[1].rstrip('\n')
+        secret = secrets[2].rstrip('\n')
+    except FileNotFoundError:
+        print("[E] Secrets file not found, please create one with org_id, api_key and api_secret on each line.")
+        return
+    private_api = nicehash.private_api(endpoint, organisation_id, key, secret)
+    payouts = private_api.get_payouts(size=100, page=0)['list']
+    db = sql.connect('test.db')
+    cursor = db.cursor()
+    for transaction in payouts:
+        formatted_date = datetime.datetime.fromtimestamp(transaction['created']/1000).strftime('%Y-%m-%d %H:%M:%S')
+        query = f"INSERT INTO nicehash (id, date, amount, fee_amount) " \
+                f"VALUES ('{transaction['id']}','{formatted_date}',{transaction['amount']},{transaction['feeAmount']})"
+        try:
+            cursor.execute(query)
+        except sqlite3.IntegrityError:
+            pass
+    db.commit()
+    db.close()
+
+
 def calc_metrics(start: datetime, end: datetime):
     db = sql.connect('test.db')
     _metrics = {}
@@ -90,11 +124,15 @@ def calc_metrics(start: datetime, end: datetime):
     sum_query = f"SELECT sum(kwh * eur_kwh) FROM  consumos, precios_energia " \
                 f"WHERE consumos.fecha = precios_energia.fecha " \
                 f"AND consumos.fecha BETWEEN \'{start}\' AND \'{end}\'"
-    _metrics['total_cost'] = (cursor.execute(sum_query).fetchone()[0])
+    _metrics['total_cost'] = cursor.execute(sum_query).fetchone()[0]
     avg_query = f"SELECT avg(kwh * eur_kwh) FROM  consumos, precios_energia " \
                 f"WHERE consumos.fecha = precios_energia.fecha " \
                 f"AND consumos.fecha BETWEEN \'{start}\' AND \'{end}\'"
-    _metrics['avg_cost'] = (cursor.execute(avg_query).fetchone()[0])
+    _metrics['avg_cost'] = cursor.execute(avg_query).fetchone()[0]
+    btc_sum_query = f"SELECT sum(amount) FROM nicehash WHERE date BETWEEN '{start}' AND '{end}'"
+    _metrics['btc_produced'] = cursor.execute(btc_sum_query).fetchone()[0]
+    btc_price = requests.get("https://api.coingecko.com/api/v3/exchange_rates")
+    _metrics['btc_eur'] = btc_price.json()['rates']['eur']['value']
     db.close()
     return _metrics
 
@@ -115,7 +153,6 @@ def plot_data(start: datetime, end: datetime, save_file=True, plot_3=True):
     if save_file:
         matplotlib.pyplot.savefig('plot.png')
     matplotlib.pyplot.show()
-    print(table)
 
 
 if __name__ == '__main__':
@@ -123,9 +160,12 @@ if __name__ == '__main__':
     all_args.add_argument('-s', '--startdate', required=False, help='starting date in Y-M-D')
     all_args.add_argument('-e', '--enddate', required=False, help='ending date in Y-M-D')
     args = vars(all_args.parse_args())
-    energy_kwh = asyncio.run(update_power(year=2022, month=1))
-    update_energy_cost(datetime.date(2022, 1, 1), datetime.date(2022, 2, 20))
+    energy_kwh = asyncio.run(update_power(year=2022, month=2))
+    update_energy_cost(datetime.date(2022, 1, 1), datetime.date(2022, 2, 22))
     metrics = calc_metrics(datetime.date(2022, 1, 1), datetime.date.today())
-    print(f"Total cost in Euros: {metrics.get('total_cost'):.2f} ")
-    print(f"Average cost in Euros: {metrics.get('avg_cost'):.2f}\n________________")
-    plot_data(datetime.date(2022, 1, 19), datetime.date.today(), plot_3=False)
+    print(f"________________\nTotal energy cost in Euros: {metrics.get('total_cost'):.2f} ")
+    print(f"Total BTC produced: {metrics.get('btc_produced'):.8f} EUR: "
+          f"{metrics.get('btc_produced') * metrics.get('btc_eur'):.2f}")
+    print(f"Average cost per day in Euros: {metrics.get('avg_cost'):.2f}\n________________")
+    plot_data(datetime.date(2022, 1, 19), datetime.date.today(), plot_3=True)
+    update_nicehash()
