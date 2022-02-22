@@ -24,7 +24,8 @@ Average cost per day in Euros: 4.73
 ________________
 
 ```
-Note: If using Nicehash API v2 you need to create a file named 'secrets' with org_id, api_key and api_secret on each line.
+**Note**: If using Nicehash API v2 you need to create a file named 'secrets' with org_id, api_key and api_secret on each line.
+
 ![](media/img.png)
 
 ## Requirements and supported devices
