@@ -1,4 +1,9 @@
 # Changelog
+## 0.1.2
+* Add average bitcoin produced per day
+* Add profitability per day graph
+* Update README.md
+
 ## 0.1.1
 * Add Nicehash SQLite table
 * Add _Nicehash API v2_ support (for now API credentials are stored on a 'secrets' file)

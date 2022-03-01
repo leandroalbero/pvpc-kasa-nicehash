@@ -102,7 +102,7 @@ def update_nicehash():
         print("[E] Secrets file not found, please create one with org_id, api_key and api_secret on each line.")
         return
     private_api = nicehash.private_api(endpoint, organisation_id, key, secret)
-    payouts = private_api.get_payouts(size=100, page=0)['list']
+    payouts = private_api.get_payouts(size=10000, page=0)['list']
     db = sql.connect('test.db')
     cursor = db.cursor()
     for transaction in payouts:
@@ -133,11 +133,15 @@ def calc_metrics(start: datetime, end: datetime):
     _metrics['btc_produced'] = cursor.execute(btc_sum_query).fetchone()[0]
     btc_price = requests.get("https://api.coingecko.com/api/v3/exchange_rates")
     _metrics['btc_eur'] = btc_price.json()['rates']['eur']['value']
+    btc_avg_day_query = f"SELECT avg(av) from (" \
+                        f"SELECT sum(amount) as av, STRFTIME('%Y-%m-%d', date) AS date FROM nicehash " \
+                        f"WHERE date BETWEEN '{start}' AND '{end}' GROUP BY strftime('%Y-%m-%d', date))"
+    _metrics['btc_avg_day'] = cursor.execute(btc_avg_day_query).fetchone()[0]
     db.close()
     return _metrics
 
 
-def plot_data(start: datetime, end: datetime, save_file=True, plot_3=True):
+def plot_data(start: datetime, end: datetime, save_file=True, plot_3=True, profitability=True):
     db = sql.connect('test.db')
     cursor = db.cursor()
     query = f"SELECT consumos.fecha, consumos.kwh, precios_energia.eur_kwh, kwh * eur_kwh AS eur_cost " \
@@ -150,8 +154,16 @@ def plot_data(start: datetime, end: datetime, save_file=True, plot_3=True):
         dataframe.plot(x="Date", y=["EUR/day", "kWh", "EUR/kWh"], kind='line', subplots=True)
     else:
         dataframe.plot(x="Date", y=["EUR/day"], kind='line')
+
     if save_file:
         matplotlib.pyplot.savefig('plot.png')
+    if profitability:
+        btc_production = cursor.execute(f"SELECT sum(amount), STRFTIME('%Y-%m-%d', date) AS date FROM nicehash "
+                                        f"WHERE DATE(date) BETWEEN '{start}' AND '{end}' "
+                                        f"GROUP BY strftime('%Y-%m-%d', date) ORDER BY DATE(date)").fetchall()
+        btc_dataframe = pd.DataFrame(btc_production, columns=["amount", "date"]).astype({"date": datetime64})
+        btc_dataframe.plot(x="date", y=["amount"], kind='scatter')
+        matplotlib.pyplot.savefig('nicehash.png')
     matplotlib.pyplot.show()
 
 
@@ -161,11 +173,12 @@ if __name__ == '__main__':
     all_args.add_argument('-e', '--enddate', required=False, help='ending date in Y-M-D')
     args = vars(all_args.parse_args())
     energy_kwh = asyncio.run(update_power(year=2022, month=2))
-    update_energy_cost(datetime.date(2022, 1, 1), datetime.date(2022, 2, 22))
+    update_energy_cost(datetime.date(2022, 1, 1), datetime.date.today())
     metrics = calc_metrics(datetime.date(2022, 1, 1), datetime.date.today())
-    print(f"________________\nTotal energy cost in Euros: {metrics.get('total_cost'):.2f} ")
-    print(f"Total BTC produced: {metrics.get('btc_produced'):.8f} EUR: "
+    print(f"________________\nTotal energy cost: {metrics.get('total_cost'):.2f} EUR")
+    print(f"Total produced BTC: {metrics.get('btc_produced'):.8f} EUR: "
           f"{metrics.get('btc_produced') * metrics.get('btc_eur'):.2f}")
-    print(f"Average cost per day in Euros: {metrics.get('avg_cost'):.2f}\n________________")
-    plot_data(datetime.date(2022, 1, 19), datetime.date.today(), plot_3=True)
+    print(f"Average produced per day BTC: {metrics.get('btc_avg_day'):.8f} EUR: {metrics.get('btc_avg_day') * metrics.get('btc_eur'):.2f}")
+    print(f"Average energy cost per day: {metrics.get('avg_cost'):.2f} EUR\n________________")
+    plot_data(datetime.date(2022, 1, 1), datetime.date.today(), plot_3=True)
     update_nicehash()

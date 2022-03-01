@@ -16,18 +16,19 @@ Finally, run it by:
 
 ```
 (venv) fengdu:pvpc-kasa-nicehash leandroalbero$ python3 pvpc-knh
-[L] Current power consumption (W): <EmeterStatus power=768.234271 voltage=226.976638 current=3.434955 total=642.583>
+[L] Current power consumption (W): <EmeterStatus power=762.746298 voltage=231.684036 current=3.343074 total=761.359>
 ________________
-Total energy cost in Euros: 203.18 
-Total BTC produced: 0.00882312 EUR: 295.77
-Average cost per day in Euros: 4.73
+Total energy cost: 237.53 EUR
+Total produced BTC: 0.01009038 EUR: 390.40
+Average produced per day BTC: 0.00017702 EUR: 6.85
+Average energy cost per day: 4.85 EUR
 ________________
 
 ```
 **Note**: If using Nicehash API v2 you need to create a file named 'secrets' with org_id, api_key and api_secret on each line.
 
 ![](media/img.png)
-
+![](media/profitability.png)
 ## Requirements and supported devices
 
 * TP-Link Kasa smart plug, this code has been tested with the HS110
